@@ -57,14 +57,31 @@ pipeline {
                 }
             }
         }
-        stage('commit version update'){
+
+        stage('commit version update') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'gitlab-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]){
-                        sh "git remote set-url origin https://${USER}:${PASS}@gitlab.com/twn-devops-bootcamp/latest/11-eks/java-maven-app.git"
-                        sh 'git add .'
-                        sh 'git commit -m "ci: version bump"'
-                        sh 'git push origin HEAD:jenkins-jobs'
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'git-push-credential',
+                            usernameVariable: 'GIT_USER',
+                            passwordVariable: 'GIT_TOKEN'
+                        )
+                    ]) {
+                        sh '''
+                            set +x
+                            git add .
+
+                            if ! git diff --cached --quiet; then
+                                git -c user.name="Jenkins" \
+                                    -c user.email="jenkins@localhost" \
+                                    commit -m "ci: version bump"
+                            fi
+
+                            AUTH=$(printf '%s:%s' "$GIT_USER" "$GIT_TOKEN" | base64 | tr -d '\\n')
+                            git -c http.extraheader="AUTHORIZATION: basic $AUTH" \
+                                push origin HEAD:jenkins-jobs
+                        '''
                     }
                 }
             }
