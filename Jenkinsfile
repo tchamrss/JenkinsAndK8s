@@ -47,13 +47,34 @@ pipeline {
             environment {
                 AWS_ACCESS_KEY_ID = credentials('jenkins_aws_access_key_id')
                 AWS_SECRET_ACCESS_KEY = credentials('jenkins-aws_secret_access_key')
+                AWS_DEFAULT_REGION = 'eu-central-1'
                 APP_NAME = 'java-maven-app'
             }
+
             steps {
                 script {
-                   echo 'deploying docker image...'
-                   sh 'envsubst < kubernetes/deployment.yaml | kubectl apply -f -'
-                   sh 'envsubst < kubernetes/service.yaml | kubectl apply -f -'
+                    echo 'deploying docker image...'
+
+                    sh '''
+                        set -e
+
+                        echo "Checking AWS identity..."
+                        aws sts get-caller-identity
+
+                        echo "Creating EKS kubeconfig..."
+                        aws eks update-kubeconfig \
+                            --region eu-central-1 \
+                            --name demo-cluster
+
+                        echo "Checking Kubernetes connection..."
+                        kubectl config current-context
+                        kubectl get nodes
+
+                        echo "Deploying application..."
+                        envsubst < kubernetes/deployment.yaml | kubectl apply -f -
+
+                        envsubst < kubernetes/service.yaml | kubectl apply -f -
+                    '''
                 }
             }
         }
