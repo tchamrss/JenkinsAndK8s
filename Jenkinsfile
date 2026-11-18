@@ -6,9 +6,8 @@ pipeline {
         maven 'Maven'
     }
     environment {
-        DOCKER_REGISTRY = 'docker.io'
-        DOCKER_REPO_SERVER = 'tchamrss/demo-app'
-        DOCKER_REPO = "${DOCKER_REPO_SERVER}/java-maven-app"
+        DOCKER_REPO_SERVER = 'docker.io'
+        DOCKER_REPO = 'tchamrss/java-maven-app'
     }
     stages {
         stage('increment version') {
